@@ -18,12 +18,24 @@ int pulsador=13;
 const int led = 4;
 //Fin variables para el control de carga
 
-
-int pos = 2, neg = 3;
+//Inicio variables para controlar el paso a paso
+int pos = 2; 
+int neg = 3;
 int cambio = 1;
 bool devolver=false;
-int pass=0;
+//Fin variables para controlar el paso a paso
 
+void setup()
+{
+  Serial.begin(9600);
+  //Definiendo pines de entrada y salida
+  servo.attach(9);   //asignacion de la linea de señal al pin 9 PWM
+  pinMode(led, OUTPUT);
+  pinMode(pulsador,OUTPUT);
+  pinMode(A2,INPUT); 
+  pinMode(pos, OUTPUT);
+  pinMode(neg, OUTPUT);
+}
 
 //Inicio función para controlar el servo
  void controlServo(){
@@ -81,19 +93,6 @@ void controlCarga(){
 }
 //Fin Función para control de carga
 
-void setup()
-{
-  Serial.begin(9600);
-  //Definiendo pines de entrada y salida
-  servo.attach(9);   //asignacion de la linea de señal al pin 9 PWM
-  pinMode(led, OUTPUT);
-  pinMode(pulsador,OUTPUT);
-  pinMode(A2,INPUT); 
-  pinMode(pos, OUTPUT);
- pinMode(neg, OUTPUT);
-}
-
-
 void positivo()
 {
  digitalWrite(pos, 0);
@@ -111,25 +110,35 @@ void negativo()
  digitalWrite(pos,0);
  digitalWrite(pos,0);
 }
-void controlMotor(){
- eastLDR = analogRead(eLDRPin); //Leer los valores de la fotocelda
- westLDR = analogRead(wLDRPin);
-  if (eastLDR>900 && westLDR>900){
- 	pass=1;
+void giroPositivo(){
+  while(devolver==false){
+  	eastLDR = analogRead(eLDRPin);
+  	westLDR = analogRead(wLDRPin);  
+  if(eastLDR>800 && westLDR>800){
+    positivo();
+    delay(100);
+    devolver=true;
+    }
+    break;
   }
-  
-  while (pass==1){
-  	positivo(); 
-    delay(8000);
-    break;  
-  }
-
 }
-
+void giroNegativo(){
+  while(devolver==false){
+  	eastLDR = analogRead(eLDRPin);
+  	westLDR = analogRead(wLDRPin);
+   if(eastLDR<800 && westLDR<800 && devolver==true){
+    negativo();
+    delay(100);
+    devolver=true;
+    }
+    break;
+  }
+}
 
 void loop()
 {
-  controlMotor();
+  giroPositivo();
+  giroNegativo();
   controlServo();
   controlCarga();
 }
