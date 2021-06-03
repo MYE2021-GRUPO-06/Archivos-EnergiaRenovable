@@ -1,4 +1,5 @@
 #include <Servo.h>
+//Inicio variables para el servo
 Servo servo;   // controlador servo
 int eLDRPin = A1; // pines asignados a las fotoresistencias
 int wLDRPin = A0; // pines asignados a las fotoresistencias
@@ -7,19 +8,78 @@ int westLDR = 0;//variables para fotoresistencia
 int difference = 0; //variable para comparar ambas ldr
 int error = 10;  // Variable para una diferencia notable entre las LDR
 int servoSet = 130; //Variable para la posicion del servomotor
+//Fin variables para el servo
 
+//Inicio variables para el control de carga
 int estadoPulsador = 0;  //LOW es 0 y HIGH es 1
 //variable para guardar el estado anterior del pulsador
 int estadoAnterior = 0;  //LOW es 0 y HIGH es 1
 int pulsador=13;
-//variable para manipular el servo
+const int led = 4;
+//Fin variables para el control de carga
 
 
-//Asignando led rojo a pin 2, estos led se usaran para el 
-//control de la carga de la bateria, rojo = necesita cargar
-//y verde= carga completa  (esto para no sobrecargar la bateria)
-//Asignando led verde a pin 3
-const int led = 2;
+int pos = 2, neg = 3;
+int cambio = 1;
+bool devolver=false;
+int pass=0;
+
+
+//Inicio función para controlar el servo
+ void controlServo(){
+  //Un LDR es un resistor que varía su valor de resistencia 
+  //eléctrica dependiendo de la cantidad de luz que incide 
+  //sobre él.
+  // entre mayor es la luz menor sera el valor de la resistencia
+  // entre menor es la luz mayor es la resistencia
+ eastLDR = analogRead(eLDRPin); //Leer los valores de la fotocelda
+ westLDR = analogRead(wLDRPin);
+ while (eastLDR < 400 && westLDR < 400) {  // verifica si la luz que persiben las ldr son bajas
+   eastLDR = analogRead(eLDRPin);
+    westLDR = analogRead(wLDRPin);
+   while (servoSet <=140 && servoSet >=15) {     // si es asi lo vamos a activar el motor para cerrar la carpa
+     servoSet ++;
+     servo.write(servoSet);
+     delay(100);
+   }
+ }
+ difference = eastLDR - westLDR ; //comprueba la diferencia 
+ if (difference > 10) {          //envia el panel hacia la fotocelda con una lentura alta
+   if (servoSet <= 140) {
+     servoSet ++;
+     servo.write(servoSet);   
+   }
+ } else if (difference < -10) {
+   if (servoSet >= 15) {
+     servoSet --;
+     servo.write(servoSet);  
+    }
+   }
+  }
+//Fin función para controlar el servo
+
+//Inicio Función para cotrol de carga
+void controlCarga(){
+ //controlando suministro del panel a la bateria para no sobrecargarla
+  int valorPot=analogRead(A2);
+  //Serial.println(valorPot);
+  delay(100);
+  while(valorPot>950){
+  	digitalWrite(led,LOW);
+    valorPot=analogRead(A2);
+    estadoPulsador=0;
+     digitalWrite(pulsador,estadoPulsador);   
+    break;
+  }
+  while(valorPot<950){
+  	digitalWrite(led,HIGH);
+    valorPot=analogRead(A2);
+    estadoPulsador=1;
+     digitalWrite(pulsador,estadoPulsador);
+    break;
+  }
+}
+//Fin Función para control de carga
 
 void setup()
 {
@@ -29,57 +89,47 @@ void setup()
   pinMode(led, OUTPUT);
   pinMode(pulsador,OUTPUT);
   pinMode(A2,INPUT); 
-  // Iniciamos el servo para que empiece a trabajar con el pin asignado
-  
-
+  pinMode(pos, OUTPUT);
+ pinMode(neg, OUTPUT);
 }
-void loop()
-{ 
-   //Un LDR es un resistor que varía su valor de resistencia 
-  //eléctrica dependiendo de la cantidad de luz que incide 
-  //sobre él.
-  // entre mayor es la luz menor sera el valor de la resistencia
-  // entre menor es la luz mayor es la resistencia
+
+
+void positivo()
+{
+ digitalWrite(pos, 0);
+ digitalWrite(neg, 1);
+ delay(8000);
+ digitalWrite(pos,0);
+ digitalWrite(pos,1);
+}
+
+void negativo()
+{
+ digitalWrite(pos, 1);
+ digitalWrite(neg, 0);
+ delay(8000);
+ digitalWrite(pos,0);
+ digitalWrite(pos,0);
+}
+void controlMotor(){
  eastLDR = analogRead(eLDRPin); //Leer los valores de la fotocelda
  westLDR = analogRead(wLDRPin);
-
- if (eastLDR < 400 && westLDR < 400) {  // verifica si la luz que persiben las ldr son bajas
-   while (servoSet <=140 && servoSet >=15) {     // si es asi lo vamos a activar el motor para cerrar la carpa
-     servoSet ++;
-     servo.write(servoSet);
-     delay(100);
-     // aca ingresaremos el codigo para mover el servomotor
-   }
- }
- difference = eastLDR - westLDR ; //comprueba la diferencia 
- if (difference > 10) {          //envia el panel hacia la fotocelda con una lentura alta
-   if (servoSet <= 140) {
-     servoSet ++;
-     servo.write(servoSet);
-   }
- } else if (difference < -10) {
-   if (servoSet >= 15) {
-     servoSet --;
-     servo.write(servoSet);
-   }
-   }
-  /*
-   //controlando suministro del panel a la bateria para no sobrecargarla
-  int valorPot=analogRead(A2);
-  Serial.println(valorPot);
-  delay(100);
-  while(valorPot>950){
-    digitalWrite(2,LOW);
-    valorPot=analogRead(A2);
-    estadoPulsador=0;
-     digitalWrite(pulsador,estadoPulsador);   
+  if (eastLDR>900 && westLDR>900){
+ 	pass=1;
   }
-  while(valorPot<950){
-    digitalWrite(2,HIGH);
-    valorPot=analogRead(A2);
-    estadoPulsador=1;
-     digitalWrite(pulsador,estadoPulsador);
-  } 
-*/
+  
+  while (pass==1){
+  	positivo(); 
+    delay(8000);
+    break;  
+  }
 
+}
+
+
+void loop()
+{
+  controlMotor();
+  controlServo();
+  controlCarga();
 }
